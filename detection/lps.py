@@ -1,4 +1,9 @@
-import uuid
+# -*- coding: utf-8 -*-
+"""
+File Name：     main
+Description :
+date：          2024/1/19 018
+"""
 
 import cv2
 import numpy as np
