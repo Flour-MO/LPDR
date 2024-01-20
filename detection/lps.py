@@ -4,10 +4,96 @@ File Name：     main
 Description :
 date：          2024/1/19 018
 """
+import uuid
 
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+
+
+# 二-7-3、纵向分割：分割字符
+def Cut_Y(pty, cols, source):
+    lps_img = []
+    print(pty)
+    WIDTH = 32  # 经过测试，一个字符宽度约为32
+    w = w1 = w2 = 0  # 前谷 字符开始 字符结束
+    begin = False  # 字符开始标记
+    last = 10  # 上一次的值
+    con = 0  # 计数
+
+    # 纵向切割（正式切割字符）
+    for j in range(int(cols)):
+        # 0、极大值判断
+        if pty[j] == max(pty):
+            if j < 1:  # 左边（跳过）
+                w2 = j
+                if begin == True:
+                    begin = False
+                continue
+
+            elif j > 220:  # 右边（直接收尾）
+                if begin == True:
+                    begin = False
+                w2 = j
+                w1 = w1-10 if w2-w1 < 20 else w1
+                b_copy = source[:, w1:w2]
+                if b_copy:
+                    lps_img.append(b_copy)
+                # cv2.imshow(str(uuid.uuid4()), b_copy)
+                con += 1
+                break
+
+        # 1、前谷（前面的波谷）
+        if pty[j] < 12 and begin == False:  # 前谷判断：像素数量<12
+            last = pty[j]
+            w = j
+
+        # 2、字符开始（上升）
+        elif last < 12 and pty[j] > 1:
+            last = pty[j]
+            w1 = j
+            begin = True
+
+        # 3、字符结束
+        elif pty[j] < 1 and begin:
+            begin = False
+            last = pty[j]
+            w2 = j
+            width = w2 - w1
+            # 3-1、分割并显示（排除过小情况）
+            if 10 < width < WIDTH + 3:  # 要排除掉干扰，又不能过滤掉字符”1“
+                w1 = w1 - 10 if w2 - w1 < 20 else w1
+                b_copy = source[:, w1:w2]
+                lps_img.append(b_copy)
+                # cv2.imshow(str(uuid.uuid4()), b_copy)
+                # cv2.waitKey(0)
+                con += 1
+            # 3-2、从多个贴合字符中提取单个字符
+            elif width >= WIDTH + 3:
+                # 统计贴合字符个数
+                num = int(width / WIDTH + 0.5)  # 四舍五入
+                for k in range(num):
+                    # w1和w2坐标向后移（用w3、w4代替w1和w2）
+                    w3 = w1 + k * WIDTH
+                    w4 = w1 + (k + 1) * WIDTH
+                    b_copy = source[:, w3:w4]
+                    lps_img.append(b_copy)
+                    # cv2.imshow(str(uuid.uuid4()), b_copy)
+                    con += 1
+
+        # 4、分割尾部噪声（距离过远默认没有字符了）
+        elif begin is False and (j - w2) > 30:
+            break
+
+    # 最后检查收尾情况
+    if begin:
+        w2 = 220
+        w1 = w1 - 10 if w2 - w1 < 20 else w1
+        b_copy = source[:, w1:w2]
+        lps_img.append(b_copy)
+        # cv2.imshow(str(uuid.uuid4()), b_copy)
+        # cv2.waitKey(0)
+    return lps_img
 
 
 def Exp_images(img2, s):
@@ -94,27 +180,13 @@ def Draw_Hist(ptx, pty):
     plt.show()
 
 
-def Get_Lps(image):
+def Get_Lps(image, source):
     # 统计各行各列白色像素个数（为了得到直方图横纵坐标）-
     ptx, pty = White_Statistic(image)
 
+    lp_ls = Cut_Y(pty, len(pty), source)
     # 绘制直方图（横、纵）
     # Draw_Hist(ptx, pty)
-
-    pty.append(0)
-    flag = False
-    S = E = None
-    lp_ls = []
-    for k, j in enumerate(pty):
-        if j != 0 and not flag:
-            S = k + 1
-            flag = True
-        elif j == 0 and flag:
-            E = k - 1
-            if S and E:
-                lp_ls.append((S, E))
-                S = E = None
-            flag = False
     return lp_ls
 
 
@@ -123,17 +195,13 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    lp_ls = None
-    for x in range(1, 8):
-        thresh0 = Exp_images(img2, x * 25)
-        lp_ls = Get_Lps(thresh0)
+    for x in range(1, 11)[::-1]:
+        thresh0 = Exp_images(img2, x * 20)
+        lp_ls = Get_Lps(thresh0, img2)
+        print(len(lp_ls))
         if len(lp_ls) == 7:
-            break
-    if lp_ls:
-        lp_imgs = []
-        for _ in lp_ls:
-            lp_imgs.append(img2[0:70, _[0]:_[1]])
-        return lp_imgs
+            # break
+            return lp_ls
 
 
 if __name__ == '__main__':
