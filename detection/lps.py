@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 # 二-7-3、纵向分割：分割字符
 def Cut_Y(pty, cols, source):
     lps_img = []
-    print(pty)
+    # print(pty)
     WIDTH = 32  # 经过测试，一个字符宽度约为32
     w = w1 = w2 = 0  # 前谷 字符开始 字符结束
     begin = False  # 字符开始标记
@@ -195,10 +195,10 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in range(1, 11)[::-1]:
-        thresh0 = Exp_images(img2, x * 20)
+    for x in range(1, 21)[::-1]:
+        thresh0 = Exp_images(img2, x * 10)
         lp_ls = Get_Lps(thresh0, img2)
-        print(len(lp_ls))
+        # print(len(lp_ls))
         if len(lp_ls) == 7:
             # break
             return lp_ls

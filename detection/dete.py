@@ -6,6 +6,7 @@ date：          2024/1/18 018
 """
 import cv2
 import numpy as np
+from scipy import stats
 from detection.lps import Get_Lp_Images
 
 
@@ -23,6 +24,103 @@ class Det:
             point[1] = 0
 
     def fixPosition(self, img, img_bin):
+        # 根据设定的阈值和图片直方图，找出波峰，用于分隔字符
+        def find_waves(threshold, histogram):
+            up_point = -1  # 上升点
+            is_peak = False
+            if histogram[0] > threshold:
+                up_point = 0
+                is_peak = True
+            wave_peaks = []
+            for i, x in enumerate(histogram):
+                if is_peak and x < threshold:
+                    if i - up_point > 2:
+                        is_peak = False
+                        wave_peaks.append((up_point, i))
+                elif not is_peak and x >= threshold:
+                    is_peak = True
+                    up_point = i
+            if is_peak and up_point != -1 and i - up_point > 4:
+                wave_peaks.append((up_point, i))
+            return wave_peaks
+
+        def remove_plate_upanddown_border(card_img, card_gray):
+            """
+            这个函数将截取到的车牌照片转化为灰度图，然后去除车牌的上下无用的边缘部分，确定上下边框
+            输入： card_img是从原始图片中分割出的车牌照片
+            输出: 在高度上缩小后的字符二值图片
+            """
+            # plate_Arr = cv2.imread(card_img)
+            plate_gray_Arr = cv2.cvtColor(card_img, cv2.COLOR_BGR2GRAY)
+            ret, plate_binary_img = cv2.threshold(plate_gray_Arr, 0, 255,
+                                                  cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+            # thresh = cv2.bitwise_not(plate_binary_img)
+            # kernel = np.ones((2, 2), np.uint8)
+            # plate_binary_img = cv2.erode(thresh, kernel, iterations=4)
+            # cv2.imshow('2',plate_binary_img)
+            # cv2.waitKey(0)
+
+            row_histogram = np.sum(plate_binary_img, axis=1)  # 数组的每一行求和
+            row_min = np.min(row_histogram)
+            row_average = np.sum(row_histogram) / plate_binary_img.shape[0]
+            row_threshold = (row_min + row_average) / 2
+            wave_peaks = find_waves(row_threshold, row_histogram)
+            # 接下来挑选跨度最大的波峰
+            wave_span = 0.0
+            # print(wave_peaks)
+            for wave_peak in wave_peaks:
+                span = wave_peak[1] - wave_peak[0]
+                if span > wave_span:
+                    wave_span = span
+                    selected_wave = wave_peak
+            plate_binary_img = card_img[selected_wave[0]:selected_wave[1], :]
+            plate_binary_geay_img = card_gray[selected_wave[0]:selected_wave[1], :]
+            # cv2.imshow("plate_binary_img", plate_binary_img)
+
+            return plate_binary_img, plate_binary_geay_img
+
+        def calc_slope_point(rotated_bin):
+            h, w = rotated_bin.shape[:2]
+            l_line_x = []
+            l_line_y = []
+            r_line_x = []
+            r_line_y = []
+            for i in range(h):
+                for j in range(w):
+                    if rotated_bin[i, j] == 255:
+                        l_line_x.append(i)
+                        l_line_y.append(-j)
+                        break
+                for k in range(w)[::-1]:
+                    if rotated_bin[i, k] == 255:
+                        r_line_x.append(i)
+                        r_line_y.append(-k)
+                        break
+            lx = np.array(l_line_x)
+            ly = np.array(l_line_y)
+            rx = np.array(r_line_x)
+            ry = np.array(r_line_y)
+            # print(l_line_x)
+            # print(l_line_y)
+            rslope, intercept, r_value, p_value, std_err = stats.linregress(rx, ry)
+            lslope, intercept, r_value, p_value, std_err = stats.linregress(lx, ly)
+            print(f"双边斜率:{lslope, rslope}")
+            if lslope > 0:
+                left_point = (int(lslope * h) / 4, 0)
+                down_point = (0, h)
+            else:
+                left_point = (0, 0)
+                down_point = (-int(lslope * h) / 4, h)
+            if rslope > 0:
+                right_point = (w - int(rslope * h) / 4, h)
+                up_point = (w, 0)
+            else:
+                right_point = (w, h)
+                up_point = (w + int(rslope * h) / 4, 0)
+
+            return left_point, up_point, right_point, down_point
+
         # 检测所有外轮廓，只留矩形的四个顶点
         contours, _ = cv2.findContours(img_bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         oldimg = img
@@ -42,80 +140,58 @@ class Det:
                 # car_contours.append(box)
 
                 angle = rect[-1]
-                print(rect)
+                # print(rect)
 
                 y = [_[0] for _ in box]
                 x = [_[1] for _ in box]
-                lp_img = img[min(x):max(x), min(y):max(y)]
+                lp_img = img[min(x):max(x), min(y) - 5:max(y) + 5]
+                lp_g_img = img_bin[min(x):max(x), min(y) - 5:max(y) + 5]
+                # cv2.imshow('lp_img', lp_img)
+                # cv2.waitKey(0)
 
                 h, w = lp_img.shape[:2]
                 center = (w // 2, h // 2)
                 # if angle % 90 != 0:
-                if angle < 45:
-                    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-                elif 90 > angle > 45:
-                    M = cv2.getRotationMatrix2D(center, -(90 - angle), 1.0)
+                print(f"倾斜角度:{angle}")
+                if 1 < angle < 90:
+                    M = cv2.getRotationMatrix2D(center, angle, 1.0) if angle < 45 else cv2.getRotationMatrix2D(
+                        center, -(90 - angle), 1.0)
                 else:
-                    M = cv2.getRotationMatrix2D(center, 0, 1.0)
+                    angle = 0
+                    M = cv2.getRotationMatrix2D(center, angle, 1.0)
                 rotated = cv2.warpAffine(lp_img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-                rotated = cv2.resize(rotated, (230, 70))[:, 10:220]
+                rotated_bin = cv2.warpAffine(
+                    lp_g_img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+                rotated = cv2.resize(rotated, (230, 70))  # [:, 10:220]
+                rotated_bin = cv2.resize(rotated_bin, (230, 70))
 
-                # cv2.imshow('r', rotated)
+                remove, remove_gery = remove_plate_upanddown_border(rotated, rotated_bin)
+
+                # cv2.imshow('rotated', rotated)
                 # cv2.waitKey(0)
 
-                # 根据设定的阈值和图片直方图，找出波峰，用于分隔字符
-                def find_waves(threshold, histogram):
-                    up_point = -1  # 上升点
-                    is_peak = False
-                    if histogram[0] > threshold:
-                        up_point = 0
-                        is_peak = True
-                    wave_peaks = []
-                    for i, x in enumerate(histogram):
-                        if is_peak and x < threshold:
-                            if i - up_point > 2:
-                                is_peak = False
-                                wave_peaks.append((up_point, i))
-                        elif not is_peak and x >= threshold:
-                            is_peak = True
-                            up_point = i
-                    if is_peak and up_point != -1 and i - up_point > 4:
-                        wave_peaks.append((up_point, i))
-                    return wave_peaks
+                remove_h, remove_w = remove.shape[:2]
 
-                def remove_plate_upanddown_border(card_img):
-                    """
-                    这个函数将截取到的车牌照片转化为灰度图，然后去除车牌的上下无用的边缘部分，确定上下边框
-                    输入： card_img是从原始图片中分割出的车牌照片
-                    输出: 在高度上缩小后的字符二值图片
-                    """
-                    # plate_Arr = cv2.imread(card_img)
-                    plate_gray_Arr = cv2.cvtColor(card_img, cv2.COLOR_BGR2GRAY)
-                    ret, plate_binary_img = cv2.threshold(plate_gray_Arr, 0, 255,
-                                                          cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                    row_histogram = np.sum(plate_binary_img, axis=1)  # 数组的每一行求和
-                    row_min = np.min(row_histogram)
-                    row_average = np.sum(row_histogram) / plate_binary_img.shape[0]
-                    row_threshold = (row_min + row_average) / 2
-                    wave_peaks = find_waves(row_threshold, row_histogram)
-                    # 接下来挑选跨度最大的波峰
-                    wave_span = 0.0
-                    print(wave_peaks)
-                    for wave_peak in wave_peaks:
-                        span = wave_peak[1] - wave_peak[0]
-                        if span > wave_span:
-                            wave_span = span
-                            selected_wave = wave_peak
-                    plate_binary_img = card_img[selected_wave[0]:selected_wave[1], :]
-                    # cv2.imshow("plate_binary_img", plate_binary_img)
+                left_point, up_point, right_point, down_point = calc_slope_point(remove_gery)
+                # 变换前的四个点
+                srcArr = np.float32([list(left_point), list(up_point), list(right_point), list(down_point)])
+                print('原始点位>>>', [list(left_point), list(up_point), list(right_point), list(down_point)])
+                # 变换后的四个点
+                dstArr = np.float32([[0, 0], [remove_w, 0], [remove_w, remove_h], [0, remove_h]])
+                print('校正点位<<<', [[0, 0], [remove_w, 0], [remove_w, remove_h], [0, remove_h]])
+                # 获取变换矩阵
+                MM = cv2.getPerspectiveTransform(srcArr, dstArr)
 
-                    return plate_binary_img
+                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, 0:remove_w][:, 10:220]
+                remove = remove
+                # print(dst.shape)
 
-                remove = remove_plate_upanddown_border(rotated)
-                # cv2.imshow('re', remove)
+                # cv2.imshow('dst', dst)
                 # cv2.waitKey(0)
-
-                return remove
+                # if angle == 0:
+                #     return remove
+                # else:
+                return dst
 
     def imgProcess(self, path):
         if isinstance(path, str):
@@ -123,7 +199,7 @@ class Det:
         else:
             img = path
         # 等比例缩放
-        size = 640
+        size = 1188
         # 获取原始图像宽高。
         height, width = img.shape[0], img.shape[1]
         # 等比例缩放尺度。
@@ -152,6 +228,8 @@ class Det:
                     img_gray[i, j] = 255
                 else:
                     img_gray[i, j] = 0
+        # cv2.imshow('a', img_gray)
+        # cv2.waitKey(0)
         # 定义核
         kernel_small = np.ones((3, 3))
         kernel_big = np.ones((7, 7))
@@ -170,9 +248,9 @@ class Det:
 
 
 if __name__ == '__main__':
-    det = Det(r'../static/exa_img/2.jpg')
-    print(det.lp_img)
-    cv2.imshow('lp_img', det.lp_img)
+    det = Det(r'../static/exa_img/3.jpg')
+    # print(det.lp_img)
+    # cv2.imshow('lp_img', det.lp_img)
     [cv2.imshow(str(k), _) for k, _ in enumerate(det.lps)]
     cv2.waitKey(0)
     from recognize.test_code import infer
