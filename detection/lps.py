@@ -11,6 +11,29 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def Get_Lps_Rectangle(thresh, source):
+    lp_ls = []
+    sort_list = []
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    for obj in contours[::-1]:
+        area = cv2.contourArea(obj)
+        if area > 500:
+            perimeter = cv2.arcLength(obj, True)
+            approx = cv2.approxPolyDP(obj, 0.02 * perimeter, True)  # 获取轮廓角点坐标
+            # CornerNum = len(approx)  # 轮廓角点的数量
+            x, y, w, h = cv2.boundingRect(approx)  # 获取坐标值和宽度、高度
+            sort_list.append(dict(x=x, y=y, w=w, h=h))
+            # cv2.rectangle(source, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            # cv2.imshow('b', thresh)
+            # cv2.imshow('a', source[y:y + h, x:x + w])
+            # cv2.waitKey(0)
+    sort_list = sorted(sort_list, key=lambda e: e['x'], reverse=False)
+    for d in sort_list:
+        x, y, w, h = d.values()
+        lp_ls.append(source[y:y + h, x:x + w])
+    return lp_ls
+
+
 # 二-7-3、纵向分割：分割字符
 def Cut_Y(pty, cols, source):
     lps_img = []
@@ -101,8 +124,8 @@ def Exp_images(img2, s):
     # cv2.imshow("gray", gray)
     # cv2.waitKey(0)
     # 二值化
-    ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY)
-    # ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY)
+    ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # cv2.imshow("thresh", thresh)
     # cv2.waitKey(0)
     # 反色
@@ -195,16 +218,19 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in range(1, 31)[::-1]:
-        # for k in range(10):
-        #     img3 = img2[:, (k * 2):220 - (2 * k)]
-        #     cv2.imshow('a', img3)
-        #     cv2.waitKey(0)
-        thresh0 = Exp_images(img2, x * 10)
+    # for x in range(1, 31)[::-1]:
+    # for k in range(10):
+    #     img3 = img2[:, (k * 2):220 - (2 * k)]
+    #     cv2.imshow('a', img3)
+    #     cv2.waitKey(0)
+    thresh0 = Exp_images(img2, 255)
+    lp_ls = Get_Lps_Rectangle(thresh0, img2)
+    # print(len(lp_ls))
+    if len(lp_ls) == 7:
+        return lp_ls
+    else:
         lp_ls = Get_Lps(thresh0, img2)
-        # print(len(lp_ls))
         if len(lp_ls) == 7:
-            # break
             check = [x.shape[1:2][0] for x in lp_ls]
             if 0 not in check:
                 return lp_ls

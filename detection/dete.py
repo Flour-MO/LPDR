@@ -182,10 +182,9 @@ class Det:
                 # 获取变换矩阵
                 MM = cv2.getPerspectiveTransform(srcArr, dstArr)
 
-                print(left_h, right_h)
-                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, left_h:remove_w - right_h][:,
-                      10:230]
-                remove = remove[:, 10:230]
+                # print(left_h, right_h)
+                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, left_h:remove_w - right_h][:, 5:225]
+                remove = remove[:, 5:225]
                 # print(dst.shape)
 
                 # cv2.imshow('dst', dst)
