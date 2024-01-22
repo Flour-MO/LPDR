@@ -133,7 +133,7 @@ class Det:
             wh_ratio = area_width / area_height
 
             # 要求矩形区域长宽比在2.5到5.5之间，2到5.5是车牌的长宽比，其余的矩形排除
-            if (2.5 < wh_ratio < 5.5):
+            if (2.5 < wh_ratio < 5.5) and area_height > 50:
                 print(area_width * area_height)
                 # car_contours.append(rect)
                 box = cv2.boxPoints(rect)
