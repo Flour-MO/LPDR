@@ -86,7 +86,7 @@ class Det:
             l_line_y = []
             r_line_x = []
             r_line_y = []
-            for i in range(h):
+            for i in range(int(h / 2) - 10, int(h / 2) + 10):
                 for j in range(w):
                     if rotated_bin[i, j] == 255:
                         l_line_x.append(i)
@@ -119,7 +119,7 @@ class Det:
                 right_point = (w, h)
                 up_point = (w + int(rslope * h), 0)
 
-            return left_point, up_point, right_point, down_point
+            return left_point, up_point, right_point, down_point, int(abs(lslope * h)), int(abs(rslope * h))
 
         # 检测所有外轮廓，只留矩形的四个顶点
         contours, _ = cv2.findContours(img_bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -146,7 +146,7 @@ class Det:
                 x = [_[1] for _ in box]
                 lp_img = img[min(x):max(x), min(y) - 5:max(y) + 5]
                 lp_g_img = img_bin[min(x):max(x), min(y) - 5:max(y) + 5]
-                # cv2.imshow('lp_img', lp_img)
+                # cv2.imshow('lp_g_img', lp_g_img)
                 # cv2.waitKey(0)
 
                 h, w = lp_img.shape[:2]
@@ -167,12 +167,12 @@ class Det:
 
                 remove, remove_gery = remove_plate_upanddown_border(rotated, rotated_bin)
 
-                # cv2.imshow('remove', remove)
+                # cv2.imshow('remove_gery', remove_gery)
                 # cv2.waitKey(0)
 
                 remove_h, remove_w = remove.shape[:2]
 
-                left_point, up_point, right_point, down_point = calc_slope_point(remove_gery)
+                left_point, up_point, right_point, down_point, left_h, right_h = calc_slope_point(remove_gery)
                 # 变换前的四个点
                 srcArr = np.float32([list(left_point), list(up_point), list(right_point), list(down_point)])
                 print('原始点位>>>', [list(left_point), list(up_point), list(right_point), list(down_point)])
@@ -182,16 +182,18 @@ class Det:
                 # 获取变换矩阵
                 MM = cv2.getPerspectiveTransform(srcArr, dstArr)
 
-                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, 0:remove_w][:, 5:225]
-                remove = remove
+                print(left_h, right_h)
+                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, left_h:remove_w - right_h][:,
+                      10:230]
+                remove = remove[:, 10:230]
                 # print(dst.shape)
 
                 # cv2.imshow('dst', dst)
                 # cv2.waitKey(0)
-                # if angle == 0:
-                #     return remove
-                # else:
-                return dst
+                if angle == 0:
+                    return remove
+                else:
+                    return dst
 
     def imgProcess(self, path):
         if isinstance(path, str):
@@ -199,7 +201,7 @@ class Det:
         else:
             img = path
         # 等比例缩放
-        size = 1080
+        size = 720
         # 获取原始图像宽高。
         height, width = img.shape[0], img.shape[1]
         # 等比例缩放尺度。

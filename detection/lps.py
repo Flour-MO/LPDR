@@ -102,6 +102,7 @@ def Exp_images(img2, s):
     # cv2.waitKey(0)
     # 二值化
     ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY)
+    # ret, thresh = cv2.threshold(gray, s, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # cv2.imshow("thresh", thresh)
     # cv2.waitKey(0)
     # 反色
@@ -194,14 +195,14 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in [120, 100, 95, 90, 85, 65, 55, 45, 35, 25]:
+    for x in range(1, 31)[::-1]:
         # for k in range(10):
         #     img3 = img2[:, (k * 2):220 - (2 * k)]
         #     cv2.imshow('a', img3)
         #     cv2.waitKey(0)
-        thresh0 = Exp_images(img2, x)
+        thresh0 = Exp_images(img2, x * 10)
         lp_ls = Get_Lps(thresh0, img2)
-        print(len(lp_ls))
+        # print(len(lp_ls))
         if len(lp_ls) == 7:
             # break
             check = [x.shape[1:2][0] for x in lp_ls]
