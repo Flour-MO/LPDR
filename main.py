@@ -49,6 +49,8 @@ def greet(image):
         # cv2.waitKey(0)
         return cv2array(det.lp_img), cv2array(img), ocr_text
     else:
+        print(f"耗时:{timec}")
+        print("<<<检测结束<<<")
         return cv2array(det.lp_img), None, None
 
 

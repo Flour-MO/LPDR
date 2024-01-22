@@ -195,8 +195,8 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in range(1, 21)[::-1]:
-        thresh0 = Exp_images(img2, x * 10)
+    for x in range(1, 11)[::-1]:
+        thresh0 = Exp_images(img2, x * 15)
         lp_ls = Get_Lps(thresh0, img2)
         # print(len(lp_ls))
         if len(lp_ls) == 7:
