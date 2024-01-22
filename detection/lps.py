@@ -194,9 +194,14 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in [100, 85, 115, 70, 130, 55, 145, 40, 160]:
+    for x in [120, 100, 95, 90, 85, 65, 55, 45, 35, 25]:
+        # for k in range(10):
+        #     img3 = img2[:, (k * 2):220 - (2 * k)]
+        #     cv2.imshow('a', img3)
+        #     cv2.waitKey(0)
         thresh0 = Exp_images(img2, x)
         lp_ls = Get_Lps(thresh0, img2)
+        print(len(lp_ls))
         if len(lp_ls) == 7:
             # break
             check = [x.shape[1:2][0] for x in lp_ls]

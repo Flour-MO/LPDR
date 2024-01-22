@@ -162,8 +162,8 @@ class Det:
                 rotated = cv2.warpAffine(lp_img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
                 rotated_bin = cv2.warpAffine(
                     lp_g_img, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-                rotated = cv2.resize(rotated, (230, 70))  # [:, 10:220]
-                rotated_bin = cv2.resize(rotated_bin, (230, 70))
+                rotated = cv2.resize(rotated, (240, 70))  # [:, 10:220]
+                rotated_bin = cv2.resize(rotated_bin, (240, 70))
 
                 remove, remove_gery = remove_plate_upanddown_border(rotated, rotated_bin)
 
@@ -182,7 +182,7 @@ class Det:
                 # 获取变换矩阵
                 MM = cv2.getPerspectiveTransform(srcArr, dstArr)
 
-                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, 0:remove_w][:, 10:220]
+                dst = cv2.warpPerspective(remove, MM, (remove_w, remove_h))[0:remove_h, 0:remove_w][:, 5:225]
                 remove = remove
                 # print(dst.shape)
 
