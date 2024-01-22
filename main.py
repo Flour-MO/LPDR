@@ -34,9 +34,9 @@ def greet(image):
         for x, _ in enumerate(det.lps):
             # cv2.imshow(str(x), _)
             if x == 0:
-                model_path = r'recognize\model\LPDR_ZH.pkl'
+                model_path = r'recognize/model/LPDR_ZH.pkl'
             else:
-                model_path = r'recognize\model\LPDR_0_Z.pkl'
+                model_path = r'recognize/model/LPDR_0_Z.pkl'
             ocr_text += infer(det.lps[x], model_path=model_path)
             height = int(_.shape[0])
             width = int(_.shape[1])
@@ -61,6 +61,6 @@ demo = gr.Interface(
              gr.Image(sources=[], label="分割", height="20vh"),
              gr.Label(label="识别", )
              ],
-    examples=[[fr'static\exa_img\{_}'] for _ in os.listdir(r'static\exa_img')]
+    examples=[[fr'static/exa_img/{_}'] for _ in os.listdir(r'static/exa_img')]
 )
-demo.launch()
+demo.launch(server_name='0.0.0.0', server_port=7860)
