@@ -107,17 +107,17 @@ class Det:
             lslope, intercept, r_value, p_value, std_err = stats.linregress(lx, ly)
             print(f"双边斜率:{lslope, rslope}")
             if lslope > 0:
-                left_point = (int(lslope * h) / 4, 0)
+                left_point = (int(lslope * h), 0)
                 down_point = (0, h)
             else:
                 left_point = (0, 0)
-                down_point = (-int(lslope * h) / 4, h)
+                down_point = (-int(lslope * h), h)
             if rslope > 0:
-                right_point = (w - int(rslope * h) / 4, h)
+                right_point = (w - int(rslope * h), h)
                 up_point = (w, 0)
             else:
                 right_point = (w, h)
-                up_point = (w + int(rslope * h) / 4, 0)
+                up_point = (w + int(rslope * h), 0)
 
             return left_point, up_point, right_point, down_point
 
@@ -133,8 +133,7 @@ class Det:
             wh_ratio = area_width / area_height
 
             # 要求矩形区域长宽比在2.5到5.5之间，2到5.5是车牌的长宽比，其余的矩形排除
-            if (2.5 < wh_ratio < 5.5) and area_height > 50:
-                print(area_width * area_height)
+            if (2.2 < wh_ratio < 5.5) and (35 < area_height) and (area_width > area_height):
                 # car_contours.append(rect)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
@@ -168,7 +167,7 @@ class Det:
 
                 remove, remove_gery = remove_plate_upanddown_border(rotated, rotated_bin)
 
-                # cv2.imshow('rotated', rotated)
+                # cv2.imshow('remove', remove)
                 # cv2.waitKey(0)
 
                 remove_h, remove_w = remove.shape[:2]
@@ -225,11 +224,11 @@ class Det:
         for i in range(h):
             for j in range(w):
                 # 普通蓝色车牌，同时排除透明反光物质的干扰
-                if ((img_HSV[:, :, 0][i, j] - 115) ** 2 < 15 ** 2) and (img_B[i, j] > 70) and (img_R[i, j] < 40):
+                if (100 < img_HSV[:, :, 0][i, j] < 140) and (img_B[i, j] > 90) and (img_R[i, j] < 60):
                     img_gray[i, j] = 255
                 else:
                     img_gray[i, j] = 0
-        # cv2.imshow('a', img_gray)
+        # cv2.imshow('a', cv2.resize(img_gray, (192, 108)))
         # cv2.waitKey(0)
         # 定义核
         kernel_small = np.ones((3, 3))

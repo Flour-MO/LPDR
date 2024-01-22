@@ -35,10 +35,9 @@ def Cut_Y(pty, cols, source):
                 if begin == True:
                     begin = False
                 w2 = j
-                w1 = w1-10 if w2-w1 < 20 else w1
+                # w1 = w1 - 10 if w2 - w1 < 20 else w1
                 b_copy = source[:, w1:w2]
-                if b_copy:
-                    lps_img.append(b_copy)
+                lps_img.append(b_copy)
                 # cv2.imshow(str(uuid.uuid4()), b_copy)
                 con += 1
                 break
@@ -62,7 +61,7 @@ def Cut_Y(pty, cols, source):
             width = w2 - w1
             # 3-1、分割并显示（排除过小情况）
             if 10 < width < WIDTH + 3:  # 要排除掉干扰，又不能过滤掉字符”1“
-                w1 = w1 - 10 if w2 - w1 < 20 else w1
+                # w1 = w1 - 10 if w2 - w1 < 20 else w1
                 b_copy = source[:, w1:w2]
                 lps_img.append(b_copy)
                 # cv2.imshow(str(uuid.uuid4()), b_copy)
@@ -88,7 +87,7 @@ def Cut_Y(pty, cols, source):
     # 最后检查收尾情况
     if begin:
         w2 = 220
-        w1 = w1 - 10 if w2 - w1 < 20 else w1
+        # w1 = w1 - 10 if w2 - w1 < 20 else w1
         b_copy = source[:, w1:w2]
         lps_img.append(b_copy)
         # cv2.imshow(str(uuid.uuid4()), b_copy)
@@ -195,13 +194,14 @@ def Get_Lp_Images(image):
     # cv2.imshow("img2", img2)
     # cv2.waitKey(0)
 
-    for x in range(1, 11)[::-1]:
-        thresh0 = Exp_images(img2, x * 15)
+    for x in [100, 85, 115, 70, 130, 55, 145, 40, 160]:
+        thresh0 = Exp_images(img2, x)
         lp_ls = Get_Lps(thresh0, img2)
-        # print(len(lp_ls))
         if len(lp_ls) == 7:
             # break
-            return lp_ls
+            check = [x.shape[1:2][0] for x in lp_ls]
+            if 0 not in check:
+                return lp_ls
 
 
 if __name__ == '__main__':
