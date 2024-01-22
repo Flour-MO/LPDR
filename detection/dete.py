@@ -131,9 +131,10 @@ class Det:
             if area_width < area_height:
                 area_width, area_height = area_height, area_width
             wh_ratio = area_width / area_height
-            # print(wh_ratio)
-            # 要求矩形区域长宽比在2到5.5之间，2到5.5是车牌的长宽比，其余的矩形排除
-            if (2 < wh_ratio < 5.5) and area_height > 50:
+
+            # 要求矩形区域长宽比在2.5到5.5之间，2到5.5是车牌的长宽比，其余的矩形排除
+            if (2.5 < wh_ratio < 5.5):
+                print(area_width * area_height)
                 # car_contours.append(rect)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
@@ -199,7 +200,7 @@ class Det:
         else:
             img = path
         # 等比例缩放
-        size = 1188
+        size = 1080
         # 获取原始图像宽高。
         height, width = img.shape[0], img.shape[1]
         # 等比例缩放尺度。
