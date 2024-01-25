@@ -22,3 +22,7 @@
 ├─main.py(GUI界面)
 ├─REAMD.md(说明文件)
 ```
+
+
+#### 在线体验地址
+https://a54bd427-339c-4b5a-a226-0c1d127f3bac-00-2328wtmniy6se.riker.replit.dev/
