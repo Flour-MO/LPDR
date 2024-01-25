@@ -50,12 +50,12 @@ def main(data_path):
 
     # 分类器任选其一
     # <<<构建MLP分类器<<<
-    mlp = MLPClassifier(solver='sgd', activation='relu', alpha=1e-4, hidden_layer_sizes=(50, 50), random_state=1,
-                        max_iter=10000, verbose=100, learning_rate_init=.1, tol=1e-9)
+    # mlp = MLPClassifier(solver='sgd', activation='relu', alpha=1e-4, hidden_layer_sizes=(50, 50), random_state=1,
+    #                     max_iter=10000, verbose=100, learning_rate_init=.1, tol=1e-9)
     # >>>结束>>>
 
     # <<<构建SVC分类器<<<
-    # mlp = SVC(max_iter=100000)
+    mlp = SVC(max_iter=100000)
     # >>>结束>>>
 
     # <<<开始训练<<<
