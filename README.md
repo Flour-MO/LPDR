@@ -25,4 +25,4 @@
 
 
 #### 在线体验地址
-[https://a54bd427-339c-4b5a-a226-0c1d127f3bac-00-2328wtmniy6se.riker.replit.dev/](https://replit.com/@WangHa/LPDR)https://replit.com/@WangHa/LPDR
+https://replit.com/@WangHa/LPDR
